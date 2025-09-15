@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { quizAPI } from '../utils/api';
 
@@ -15,20 +15,7 @@ const Quiz = () => {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [id]);
-
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && quiz) {
-      handleSubmit();
-    }
-  }, [timeLeft, quiz]);
-
-  const fetchQuiz = async () => {
+  const fetchQuiz = useCallback(async () => {
     try {
       const response = await quizAPI.getQuiz(id);
       const { quiz, questions } = response.data;
@@ -41,29 +28,10 @@ const Quiz = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleAnswerSelect = (questionId, answer) => {
-    setAnswers({
-      ...answers,
-      [questionId]: answer
-    });
-  };
-
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (submitting) return;
+  const handleSubmit = useCallback(async () => {
+    if (submitting || !quiz) return;
     
     setSubmitting(true);
     
@@ -79,13 +47,45 @@ const Quiz = () => {
       setError('Failed to submit quiz');
       setSubmitting(false);
     }
-  };
+  }, [submitting, quiz, timeLeft, answers, id, navigate]);
 
-  const formatTime = (seconds) => {
+  const handleAnswerSelect = useCallback((questionId, answer) => {
+    setAnswers({
+      ...answers,
+      [questionId]: answer
+    });
+  }, [answers]);
+
+  const handleNext = useCallback(() => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  }, [currentQuestion, questions]);
+
+  const handlePrevious = useCallback(() => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
+  }, [currentQuestion]);
+
+  const formatTime = useCallback((seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchQuiz();
+  }, [fetchQuiz]);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && quiz) {
+      handleSubmit();
+    }
+  }, [timeLeft, quiz, handleSubmit]);
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 

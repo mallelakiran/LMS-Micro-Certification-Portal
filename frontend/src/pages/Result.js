@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { quizAPI, certificateAPI } from '../utils/api';
 
@@ -9,11 +9,7 @@ const Result = () => {
   const [error, setError] = useState('');
   const [downloadingCertificate, setDownloadingCertificate] = useState(false);
 
-  useEffect(() => {
-    fetchResult();
-  }, [id]);
-
-  const fetchResult = async () => {
+  const fetchResult = useCallback(async () => {
     try {
       const response = await quizAPI.getResult(id);
       setResult(response.data.result);
@@ -22,7 +18,11 @@ const Result = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchResult();
+  }, [fetchResult]);
 
   const downloadCertificate = async () => {
     if (!result.passed) return;
