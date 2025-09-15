@@ -19,6 +19,19 @@ app.use('/api/auth', authRoutes);
 app.use('/api', quizRoutes);
 app.use('/api', certificateRoutes);
 
+// Simple test endpoint (no database)
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Test endpoint working',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasJWT: !!process.env.JWT_SECRET,
+      hasDBHost: !!process.env.MYSQLHOST,
+      hasDBPassword: !!process.env.MYSQLPASSWORD
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
