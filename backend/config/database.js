@@ -1,14 +1,15 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'lms_certification',
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 };
 
 const pool = mysql.createPool(dbConfig);
@@ -19,9 +20,10 @@ const testConnection = async () => {
     const connection = await pool.getConnection();
     console.log('✅ Database connected successfully');
     connection.release();
+    return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    process.exit(1);
+    throw error;
   }
 };
 

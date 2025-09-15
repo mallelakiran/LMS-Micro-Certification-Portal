@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const authRoutes = require('./routes/auth');
@@ -21,11 +20,22 @@ app.use('/api', quizRoutes);
 app.use('/api', certificateRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    message: 'LMS Micro-Certification Portal API is running',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    await testConnection();
+    res.json({ 
+      message: 'LMS Micro-Certification Portal API is running',
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'API is running but database connection failed',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: error.message
+    });
+  }
 });
 
 // Error handling middleware
@@ -39,18 +49,23 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-const startServer = async () => {
-  try {
-    await testConnection();
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+// For Vercel serverless functions
+module.exports = app;
 
-startServer();
+// For local development
+if (require.main === module) {
+  const startServer = async () => {
+    try {
+      await testConnection();
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
+  };
+  
+  startServer();
+}
