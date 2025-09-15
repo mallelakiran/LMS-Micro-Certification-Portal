@@ -18,6 +18,20 @@ router.get('/quizzes', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all available quizzes (public endpoint for testing)
+router.get('/quizzes/public', async (req, res) => {
+  try {
+    const [quizzes] = await pool.execute(
+      'SELECT id, title, description, passing_score, total_questions, time_limit FROM quizzes ORDER BY created_at DESC'
+    );
+
+    res.json({ quizzes });
+  } catch (error) {
+    console.error('Get quizzes error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get quiz details with questions
 router.get('/quiz/:id', authenticateToken, async (req, res) => {
   try {
