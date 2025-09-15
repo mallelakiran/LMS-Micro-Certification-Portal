@@ -64,6 +64,7 @@ app.use('*', (req, res) => {
 
 // For Vercel serverless functions
 module.exports = app;
+module.exports.default = app;
 
 // For local development
 if (require.main === module) {
